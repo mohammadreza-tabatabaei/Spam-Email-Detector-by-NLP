@@ -1,0 +1,134 @@
+from google.colab import drive
+drive.mount('/content/drive')
+.......................................................................
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+...........................................................
+df = pd.read_csv('/content/drive/MyDrive/Dataset/spam_or_not_spam.csv')
+............................................................
+# Drop the rows with missing values
+df = df.dropna()
+
+blanks = []
+
+for i,email,label in df.itertuples():  # iterate over the DataFrame
+    if email.isspace():         # test 'email' for whitespace
+        blanks.append(i)     # add matching index numbers to the list
+print(len(blanks),"   |    ", 'blanks: ', blanks , )
+
+df.drop(blanks, inplace=True)
+..................................................................
+# Import the 'stopwords' corpus from the nltk library
+# Stop words are commonly used words that are often removed from text during processing to enhance algorithm performance
+import nltk
+from nltk.corpus import stopwords
+nltk.download('stopwords')
+
+# Import the 'WordNetLemmatizer' from the nltk library
+# Lemmatization is the process of reducing a word to its base or root form (lemma)
+from nltk.stem import WordNetLemmatizer
+nltk.download('wordnet')
+
+# Get the list of English stop words
+sw = stopwords.words('english')
+
+# Create an instance of WordNetLemmatizer
+lemmatizer = WordNetLemmatizer()
+..........................................................................
+# Define a function to preprocess text
+def preprocess_text(messy_string):
+    # Assert that the input is a string
+    assert(type(messy_string) == str)
+
+    # Split the string into words, lemmatize each word, remove stop words, and join the words back into a string
+    # 'lemmatizer.lemmatize(word)' reduces the word to its base or root form (lemma)
+    # 'word not in sw' filters out stop words
+    cleaned = ' '.join([lemmatizer.lemmatize(word) for word in messy_string.split() if word not in sw])
+
+    # Return the cleaned string
+    return cleaned
+............................................................................
+df['email'] = df['email'].apply(preprocess_text)
+..................................................................
+# Import necessary libraries
+from sklearn.pipeline import Pipeline
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+
+# Define the pipeline with a more descriptive name
+text_processing_pipeline = Pipeline([
+    ('Vectorize', CountVectorizer()),
+    ('TF-IDF', TfidfTransformer())
+])
+.............................................................
+text_processing_pipeline
+.......................................................
+# Import 'train_test_split' from sklearn's model_selection module
+# This is used to split arrays or matrices into random train and test subsets
+from sklearn.model_selection import train_test_split
+
+# Split 'df["email"]' and 'df["label"]' into training and testing sets
+# 'test_size=0.2' means that 20% of the data will be used for testing, and the rest for training
+# 'random_state=42' sets the seed for the random number generator used for the split
+X_train, X_test, y_train, y_test = train_test_split(df["email"], df["label"], test_size=0.2, random_state=42)
+.......................................................................
+# Fit the text processing pipeline to the training data and transform the training data
+# 'fit_transform()' learns the parameters from the data and then transforms the data according to these parameters
+X_train = text_processing_pipeline.fit_transform(X_train)
+
+# Transform the testing data using the already fitted pipeline
+# 'transform()' uses the parameters learned from 'fit_transform()' to transform the data
+X_test = text_processing_pipeline.transform(X_test)
+..........................................................................
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import classification_report , confusion_matrix
+...........................................................
+# Define a dictionary of classifiers for easier referencing and potential scalability
+classifiers = {
+    "SVC": SVC(kernel='linear'),
+    "RandomForest": RandomForestClassifier(n_estimators=100, random_state=42),
+    "LogisticRegression": LogisticRegression(random_state=42),
+    "MultinomialNB": MultinomialNB()
+}
+
+# Iterate over each classifier and print report
+for classifier_name, classifier_obj in classifiers.items():
+    # Fit the model
+    classifier_obj.fit(X_train, y_train)
+
+    # Make predictions
+    y_pred = classifier_obj.predict(X_test)
+
+    # Generate classification report
+    report = classification_report(y_test, y_pred)
+
+    # Print the classification report
+    print(f'Classification report for {classifier_name}: ')
+    print(report)
+    # Generate confusion matrix
+    cm = confusion_matrix(y_test, y_pred)
+
+    # Visualize the confusion matrix using matplotlib and seaborn
+    plt.figure(figsize=(3,3))
+    sns.heatmap(cm, annot=True, fmt=".0f", cmap = 'Blues_r')
+    plt.xlabel('Predicted')
+    plt.ylabel('True')
+    plt.show()
+
+    print("--------------------------------------------")
+......................................................................
+df.iloc[2600]
+.............................................................
+# Test the model with a custom email
+
+#custom_email = "Hi there, How are you doing?"
+custom_email = df.iloc[2600]['email']
+
+
+custom_email = text_processing_pipeline.transform([preprocess_text(custom_email)])
+
+print(classifiers["SVC"].predict(custom_email))
