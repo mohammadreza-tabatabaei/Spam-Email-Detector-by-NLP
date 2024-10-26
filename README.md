@@ -1,4 +1,3 @@
-# Spam Email Detector
 # Requirements:
 ### 1.Numpy 
 ### 2.pandas 
