@@ -1,5 +1,5 @@
 # Spam Email Detector
-##Requirements: 
+**#Requirements:** 
 1.Numpy 
 2.pandas 
 3.seaborn 
