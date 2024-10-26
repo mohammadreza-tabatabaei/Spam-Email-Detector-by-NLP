@@ -1,8 +1,8 @@
 # Spam Email Detector
 ##Requirements: 
-######1.Numpy 
-######2.pandas 
-######3.seaborn 
+###1.Numpy 
+###2.pandas 
+###3.seaborn 
 ######4.nltk 
 ######5.sklearn ****
 
